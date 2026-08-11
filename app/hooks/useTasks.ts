@@ -5,6 +5,8 @@ import { Task, TaskFormData, TaskFilters } from "@/app/types/task";
 import { getTasks, saveTasks, generateId } from "@/app/lib/taskStorage";
 import toast from "react-hot-toast";
 
+const priorityOrder = { high: 0, medium: 1, low: 2 };
+
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,11 +49,20 @@ export function useTasks() {
 
 
 
+  const deleteTask = useCallback((id: string) => {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+    toast.success("Task deleted");
+  }, []);
+
+ 
+
   return {
+    tasks,
     allTasks: tasks,
     loading,
     filters,
     setFilters,
     createTask,
+    deleteTask,
   };
 }
