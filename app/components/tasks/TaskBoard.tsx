@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useTasks } from "@/app/hooks/useTasks";
 import { Task, TaskFormData } from "@/app/types/task";
+import TaskCard from "./TaskCard";
+import TaskForm from "./TaskForm";
+import DeleteConfirm from "./DeleteConfirm";
+import FilterBar from "./FilterBar";
 import Button from "@/app/components/ui/Button";
 import { Plus, ClipboardList, Loader2 } from "lucide-react";
 
@@ -11,11 +15,17 @@ export default function TaskBoard() {
     tasks,
     allTasks,
     loading,
+    filters,
+    setFilters,
+    createTask,
+    updateTask,
+    deleteTask,
   } = useTasks();
 
-  const [ , setFormOpen] = useState(false);
-  const [ , setFormMode] = useState<"create" | "edit">("create");
-  const [ , setEditingTask] = useState<Task | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
 
   const handleCreate = () => {
     setFormMode("create");
@@ -23,7 +33,27 @@ export default function TaskBoard() {
     setFormOpen(true);
   };
 
- 
+  const handleEdit = (task: Task) => {
+    setFormMode("edit");
+    setEditingTask(task);
+    setFormOpen(true);
+  };
+
+  const handleFormSubmit = (data: TaskFormData) => {
+    if (formMode === "create") {
+      createTask(data);
+    } else if (editingTask) {
+      updateTask(editingTask.id, data);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      deleteTask(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -51,6 +81,13 @@ export default function TaskBoard() {
         </Button>
       </div>
 
+      {/* Filters */}
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        totalCount={allTasks.length}
+        filteredCount={tasks.length}
+      />
 
       {/* Task Grid */}
       {tasks.length === 0 ? (
@@ -77,10 +114,32 @@ export default function TaskBoard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={handleEdit}
+              onDelete={setDeleteTarget}
+            />
+          ))}
         </div>
       )}
 
+      {/* Modals */}
+      <TaskForm
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        initialData={editingTask}
+        mode={formMode}
+      />
+
+      <DeleteConfirm
+        isOpen={!!deleteTarget}
+        taskTitle={deleteTarget?.title || ""}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

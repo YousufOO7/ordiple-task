@@ -47,22 +47,66 @@ export function useTasks() {
     return newTask;
   }, []);
 
-
+  const updateTask = useCallback((id: string, data: TaskFormData) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              title: data.title.trim(),
+              description: data.description.trim() || undefined,
+              status: data.status,
+              priority: data.priority,
+              dueDate: data.dueDate || undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : task
+      )
+    );
+    toast.success("Task updated successfully");
+  }, []);
 
   const deleteTask = useCallback((id: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
     toast.success("Task deleted");
   }, []);
 
- 
+  // Filtered + sorted tasks
+  const filteredTasks = tasks
+    .filter((task) => {
+      const matchesStatus =
+        filters.status === "all" || task.status === filters.status;
+      const matchesSearch =
+        !filters.search ||
+        task.title.toLowerCase().includes(filters.search.toLowerCase());
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (filters.sortBy === "priority") {
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+      if (filters.sortBy === "dueDate") {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (filters.sortBy === "createdAt") {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+      return 0;
+    });
 
   return {
-    tasks,
+    tasks: filteredTasks,
     allTasks: tasks,
     loading,
     filters,
     setFilters,
     createTask,
+    updateTask,
     deleteTask,
   };
 }
